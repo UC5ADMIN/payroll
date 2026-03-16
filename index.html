@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PayrollSheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#f5f4f0; --surface:#fff; --surface2:#eeedea; --border:#e0dfd8;
+      --border2:#c8c6bc; --text:#18181a; --text2:#6b6a64; --text3:#a09e96;
+      --accent:#18181a; --accent-fg:#fff;
+      --green:#1a6344; --green-bg:#e4f4ec;
+      --amber:#854d0e; --amber-bg:#fef9ee;
+      --red:#991b1b;   --red-bg:#fff0f0;
+      --blue:#1d4ed8;  --blue-bg:#eff6ff;
+      --r:8px; --rl:12px;
+      --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    }
+    body { font-family:var(--font); background:var(--bg); color:var(--text); font-size:14px; line-height:1.5; min-height:100vh; }
+    .wrap { max-width:1120px; margin:0 auto; padding:0 20px 80px; }
+    header { display:flex; align-items:center; justify-content:space-between; padding:18px 0 16px; border-bottom:1px solid var(--border); margin-bottom:22px; flex-wrap:wrap; gap:12px; }
+    .logo { font-size:17px; font-weight:600; letter-spacing:-0.4px; display:flex; align-items:center; gap:10px; }
+    .logo-badge { font-size:11px; font-weight:500; background:var(--surface2); color:var(--text2); padding:2px 8px; border-radius:20px; border:1px solid var(--border); }
+    .conn-status { font-size:12px; color:var(--text3); display:flex; align-items:center; gap:6px; }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--border2); flex-shrink:0; display:inline-block; }
+    .dot.live { background:#16a34a; box-shadow:0 0 0 2px #dcfce7; }
+    .dot.demo { background:#d97706; box-shadow:0 0 0 2px #fef3c7; }
+    nav { display:flex; gap:4px; margin-bottom:22px; flex-wrap:wrap; }
+    .nb { padding:7px 16px; font-size:13px; font-family:var(--font); border:1px solid var(--border); border-radius:var(--r); background:var(--surface); color:var(--text2); cursor:pointer; font-weight:400; transition:all .12s; }
+    .nb:hover { border-color:var(--border2); color:var(--text); }
+    .nb.on { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); font-weight:500; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--rl); padding:20px; box-shadow:0 1px 3px rgba(0,0,0,.06); }
+    .card-bare { padding:0; overflow:hidden; }
+    .lbl { display:block; font-size:11px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; }
+    input,select { width:100%; height:38px; padding:0 12px; border:1px solid var(--border); border-radius:var(--r); background:var(--surface2); color:var(--text); font-size:13px; font-family:var(--font); outline:none; transition:border-color .12s; }
+    input:focus,select:focus { border-color:var(--border2); background:var(--surface); }
+    input[type="number"].tiny { width:60px; text-align:center; height:32px; padding:0 4px; }
+    input[type="number"].custom-amt { width:90px; height:30px; padding:0 8px; font-size:12px; text-align:right; }
+    tr.row-paid td { background:#f0faf4 !important; }
+    tr.row-paid .emp-name { color:var(--green); font-weight:600; }
+    tr.row-paid .emp-id   { color:#6db891; }
+    tr.row-paid .paid-label { font-size:11px; color:var(--green); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+    tr.row-partial td { background:#fffcf0 !important; }
+    tr.row-partial .balance-hint { font-size:11px; color:var(--amber); font-weight:600; margin-bottom:5px; }
+    input[type="month"],input[type="date"] { width:auto; }
+    .field { margin-bottom:13px; }
+    .field:last-child { margin-bottom:0; }
+    .g2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 18px; font-size:13px; font-family:var(--font); border:1px solid var(--border2); border-radius:var(--r); background:var(--surface); color:var(--text); cursor:pointer; font-weight:500; transition:all .12s; white-space:nowrap; }
+    .btn:hover { background:var(--surface2); }
+    .btn:active { transform:scale(.98); }
+    .btn-primary { background:var(--accent); color:var(--accent-fg); border-color:var(--accent); }
+    .btn-primary:hover { opacity:.87; }
+    .btn-sm { padding:5px 12px; font-size:12px; }
+    .btn-ghost { border-color:var(--border); color:var(--text2); background:transparent; }
+    .btn-ghost:hover { background:var(--surface2); color:var(--text); }
+    .btn-green { border-color:#86efac; color:var(--green); background:var(--green-bg); }
+    .btn-green:hover { background:#d1fae5; }
+    .badge { display:inline-flex; align-items:center; padding:2px 9px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap; }
+    .b-green { background:var(--green-bg); color:var(--green); }
+    .b-amber { background:var(--amber-bg); color:var(--amber); }
+    .b-red   { background:var(--red-bg);   color:var(--red); }
+    .b-blue  { background:var(--blue-bg);  color:var(--blue); }
+    .metrics { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:20px; }
+    .metric { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:14px 16px; }
+    .m-lbl { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin-bottom:5px; }
+    .m-val { font-size:21px; font-weight:600; letter-spacing:-.5px; }
+    .m-val.cr { color:var(--green); }
+    .m-val.dr { color:var(--red); }
+    .tbl-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead th { text-align:left; padding:10px 14px; font-size:11px; font-weight:600; color:var(--text3); border-bottom:1px solid var(--border); background:var(--surface2); text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+    td { padding:11px 14px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:#fafaf8; }
+    .alert { padding:12px 16px; border-radius:var(--r); font-size:13px; margin-bottom:16px; line-height:1.6; }
+    .a-info { background:var(--blue-bg); color:var(--blue); border:1px solid #bfdbfe; }
+    .a-warn { background:var(--amber-bg); color:var(--amber); border:1px solid #fcd34d; }
+    .steps { list-style:none; }
+    .steps li { display:flex; gap:14px; margin-bottom:18px; }
+    .snum { min-width:26px; height:26px; border-radius:50%; background:var(--surface2); border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; flex-shrink:0; margin-top:1px; }
+    .stitle { font-weight:600; font-size:13px; margin-bottom:3px; }
+    .sdesc { font-size:12px; color:var(--text2); line-height:1.65; }
+    code { font-family:var(--mono); font-size:11px; background:var(--surface2); padding:2px 6px; border-radius:4px; border:1px solid var(--border); }
+    .topbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+    .topbar-lbl { font-size:13px; color:var(--text2); }
+    .l-row { display:flex; align-items:center; padding:11px 0; border-bottom:1px solid var(--border); gap:10px; }
+    .l-row:last-child { border-bottom:none; }
+    .l-date { font-size:11px; color:var(--text3); min-width:84px; font-family:var(--mono); }
+    .l-desc { flex:1; }
+    .l-main { font-size:13px; }
+    .l-sub  { font-size:11px; color:var(--text3); margin-top:2px; }
+    .l-amt  { font-size:14px; font-weight:600; min-width:110px; text-align:right; }
+    .l-bal  { font-size:12px; color:var(--text3); min-width:90px; text-align:right; }
+    .l-close { display:flex; justify-content:space-between; align-items:center; padding:12px 0 0; border-top:2px solid var(--border2); margin-top:4px; font-weight:600; font-size:14px; }
+    .cr { color:var(--green); }
+    .dr { color:var(--red); }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    .sec-hd { font-size:15px; font-weight:600; margin-bottom:14px; letter-spacing:-.2px; }
+    .empty { text-align:center; padding:40px 20px; color:var(--text3); font-size:13px; line-height:2.2; }
+    .emp-name { font-weight:500; }
+    .emp-id   { font-size:11px; color:var(--text3); font-family:var(--mono); margin-top:1px; }
+    .scroll-t { max-height:420px; overflow-y:auto; }
+    #toast { position:fixed; bottom:26px; right:26px; z-index:9999; background:var(--accent); color:var(--accent-fg); padding:10px 20px; border-radius:var(--r); font-size:13px; font-weight:500; opacity:0; transform:translateY(6px); transition:all .22s; pointer-events:none; max-width:340px; }
+    #toast.show { opacity:1; transform:translateY(0); }
+    .spinner { display:inline-block; width:13px; height:13px; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:4px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    @media(max-width:640px) {
+      .two-col { grid-template-columns:1fr; }
+      .g2 { grid-template-columns:1fr; }
+      .l-bal { display:none; }
+      thead th,td { padding:8px 10px; }
+    }
+  </style>
+</head>
+<body>
+<div id="toast"></div>
+<div class="wrap">
+  <header>
+    <div class="logo">PayrollSheet <span class="logo-badge" id="mode-badge">Setup</span></div>
+    <div class="conn-status"><span class="dot" id="dot"></span><span id="conn-txt">Not connected</span></div>
+  </header>
+  <nav id="nav"></nav>
+  <div id="app"></div>
+</div>
+<script>
+const DEMO_EMP=[{id:'EMP001',name:'Arjun Sharma',salary:35000},{id:'EMP002',name:'Priya Nair',salary:42000},{id:'EMP003',name:'Karthik Rajan',salary:28000}];
+const DEMO_TXN=[
+  {id:1,empId:'EMP001',empName:'Arjun Sharma',date:'2025-01-31',type:'Salary',amount:35000,note:'Jan salary',month:'2025-01',loggedAt:''},
+  {id:2,empId:'EMP001',empName:'Arjun Sharma',date:'2025-02-10',type:'Advance',amount:5000,note:'Medical advance',month:'',loggedAt:''},
+  {id:3,empId:'EMP001',empName:'Arjun Sharma',date:'2025-02-28',type:'Salary',amount:17500,note:'Feb half salary',month:'2025-02',loggedAt:''},
+  {id:4,empId:'EMP002',empName:'Priya Nair',date:'2025-01-31',type:'Salary',amount:42000,note:'Jan salary',month:'2025-01',loggedAt:''},
+  {id:5,empId:'EMP003',empName:'Karthik Rajan',date:'2025-02-05',type:'Loan',amount:10000,note:'Personal loan',month:'',loggedAt:''},
+  {id:6,empId:'EMP003',empName:'Karthik Rajan',date:'2025-02-28',type:'Repayment',amount:2000,note:'Loan repayment',month:'',loggedAt:''},
+];
+const DEMO_ATT=[{empId:'EMP001',month:'2025-01',absentDays:2},{empId:'EMP002',month:'2025-01',absentDays:0},{empId:'EMP003',month:'2025-01',absentDays:5}];
+
+function ls(k,fb){try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;}}
+
+const S={
+  view:'setup',
+  scriptUrl:localStorage.getItem('ps_url')||'',
+  demoMode:!localStorage.getItem('ps_url'),
+  employees:[],
+  transactions:ls('ps_txns',DEMO_TXN),
+  attendance:ls('ps_att',DEMO_ATT),
+  selectedMonth:new Date().toISOString().slice(0,7),
+  selectedEmp:null,
+  rounding:localStorage.getItem('ps_rounding')||'none',
+};
+if(S.demoMode)S.employees=DEMO_EMP;
+
+function saveLocal(){localStorage.setItem('ps_txns',JSON.stringify(S.transactions));localStorage.setItem('ps_att',JSON.stringify(S.attendance));}
+function daysInMonth(ym){const[y,m]=ym.split('-').map(Number);return new Date(y,m,0).getDate();}
+function applyRounding(n){
+  if(S.rounding==='floor') return Math.floor(n/100)*100;
+  if(S.rounding==='ceil')  return Math.ceil(n/100)*100;
+  return Math.round(n);
+}
+function calcPayable(emp,absent,ym){const d=daysInMonth(ym);return applyRounding((emp.salary/d)*(d-absent));}
+function getAbsent(empId,month){const r=S.attendance.find(a=>a.empId===empId&&a.month===month);return r?r.absentDays:0;}
+function fmt(n){return '\u20b9'+Number(n).toLocaleString('en-IN');}
+function fmtDate(d){return new Date(d+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+function monthName(ym){const[y,m]=ym.split('-');return new Date(y,m-1,1).toLocaleString('en-IN',{month:'long',year:'numeric'});}
+
+let toastTimer;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3200);}
+
+function setStatus(mode){
+  const dot=document.getElementById('dot'),txt=document.getElementById('conn-txt'),badge=document.getElementById('mode-badge');
+  if(mode==='live'){dot.className='dot live';txt.textContent='Live \u2014 Google Sheets';badge.textContent='Live';badge.style.color='var(--green)';}
+  if(mode==='demo'){dot.className='dot demo';txt.textContent='Demo Mode';badge.textContent='Demo';badge.style.color='var(--amber)';}
+  if(mode==='none'){dot.className='dot';txt.textContent='Not connected';badge.textContent='Setup';badge.style.color='';}
+}
+
+// KEY FIX: all API calls use GET with URL params — avoids POST redirect body-drop bug
+async function gsCall(params){
+  const url=S.scriptUrl+'?'+new URLSearchParams(params).toString();
+  const res=await fetch(url,{method:'GET',redirect:'follow'});
+  if(!res.ok)throw new Error('HTTP '+res.status);
+  const text=await res.text();
+  let data;
+  try{data=JSON.parse(text);}catch(e){throw new Error('Response was not JSON. Check your deployment URL.\n\n'+text.slice(0,300));}
+  if(data.error)throw new Error(data.error);
+  return data;
+}
+
+async function connectScript(){
+  const url=document.getElementById('inp_url').value.trim();
+  if(!url.startsWith('https://script.google.com')){alert('That does not look like an Apps Script URL.\nIt should start with:\nhttps://script.google.com/macros/s/\u2026/exec');return;}
+  const btn=document.getElementById('btn_connect');
+  btn.innerHTML='<span class="spinner"></span> Connecting\u2026';btn.disabled=true;
+  S.scriptUrl=url;
+  try{
+    await gsCall({action:'ping'});
+    const data=await gsCall({action:'getAll'});
+    if(!data.employees||data.employees.length===0)
+      throw new Error('No employees found.\nCheck that the Employees sheet has columns:\nName | Employee ID | Monthly Salary\nwith data starting from row 2.');
+    S.employees=data.employees;
+    S.attendance=data.attendance||[];
+    S.transactions=data.transactions||[];
+    saveLocal();
+    localStorage.setItem('ps_url',url);
+    S.demoMode=false;
+    setStatus('live');
+    toast('Connected! '+S.employees.length+' employees loaded.');
+    S.view='payroll';render();
+  }catch(e){
+    alert('Connection failed:\n\n'+e.message+'\n\nCheck:\n\u2022 Deployed as Web App (not just saved)\n\u2022 Execute as: Me\n\u2022 Who has access: Anyone\n\u2022 You authorised the script\n\u2022 Using the /exec URL');
+    btn.innerHTML='Connect';btn.disabled=false;
+  }
+}
+
+async function refreshData(){
+  if(S.demoMode)return;
+  toast('Refreshing\u2026');
+  try{
+    const data=await gsCall({action:'getAll'});
+    S.employees=data.employees;
+    S.attendance=data.attendance||[];
+    S.transactions=data.transactions||[];
+    saveLocal();render();
+    toast('Refreshed from Google Sheets \u2713');
+  }catch(e){toast('Refresh failed: '+e.message);}
+}
+
+// Updates local state only — sheet write happens via saveAttendanceToSheet()
+function updateAbsent(empId, month, val){
+  const days = Math.max(0, parseInt(val) || 0);
+  const idx = S.attendance.findIndex(a=>a.empId===empId&&a.month===month);
+  if(idx>=0) S.attendance[idx].absentDays = days;
+  else S.attendance.push({empId, month, absentDays: days});
+  saveLocal(); render();
+}
+
+// Called by the Save Attendance button — sends ALL attendance in one request
+async function saveAttendanceToSheet(){
+  if(S.demoMode){ toast('Demo mode — nothing to save'); return; }
+  const btn = document.getElementById('btn_save_att');
+  if(btn){ btn.textContent='Saving\u2026'; btn.disabled=true; }
+  try{
+    // Build the full attendance payload for the current month
+    const records = S.employees.map(emp=>{
+      const absent = S.attendance.find(a=>a.empId===emp.id&&a.month===S.selectedMonth);
+      return { empId: emp.id, empName: emp.name, month: S.selectedMonth, absentDays: absent?absent.absentDays:0 };
+    });
+    // Encode as JSON in a single param to avoid per-employee race conditions
+    await gsCall({ action:'saveAllAttendance', payload: JSON.stringify(records) });
+    toast('Attendance saved to sheet \u2713');
+  } catch(e){ toast('\u26a0 Save failed: '+e.message); }
+  finally{
+    if(btn){ btn.textContent='Save Attendance'; btn.disabled=false; }
+  }
+}
+
+async function issueSalary(empId,amount,label){
+  if(!amount||amount<=0){toast('Amount must be greater than zero.');return;}
+  const emp=S.employees.find(e=>e.id===empId);
+  const note=label+' \u2014 '+monthName(S.selectedMonth);
+  const txn={id:Date.now(),empId,empName:emp?emp.name:'',date:new Date().toISOString().slice(0,10),type:'Salary',amount,note,month:S.selectedMonth,loggedAt:''};
+  S.transactions.push(txn);saveLocal();render();
+  if(!S.demoMode){
+    try{
+      const r=await gsCall({action:'addTransaction',empId,empName:txn.empName,date:txn.date,type:'Salary',amount,note,month:S.selectedMonth});
+      txn.loggedAt=r.loggedAt||'';
+      toast(fmt(amount)+' issued to '+(emp?emp.name:empId)+' \u2713 Written to sheet');
+    }catch(e){toast('Issued locally, sheet write failed: '+e.message);}
+  }else{toast(fmt(amount)+' issued to '+(emp?emp.name:empId));}
+}
+
+function setRounding(val){
+  S.rounding=val;
+  localStorage.setItem('ps_rounding',val);
+  render();
+}
+
+function issueCustom(empId){
+  const input=document.getElementById('custom_'+empId);
+  const amount=parseFloat(input.value);
+  if(!amount||amount<=0){input.focus();input.style.borderColor='var(--red)';setTimeout(()=>input.style.borderColor='',1500);return;}
+  input.style.borderColor='';
+  issueSalary(empId,amount,'Custom salary');
+  input.value='';
+}
+
+async function addTransaction(){
+  const empId=document.getElementById('tx_emp').value;
+  const type=document.getElementById('tx_type').value;
+  const amount=parseFloat(document.getElementById('tx_amount').value);
+  const date=document.getElementById('tx_date').value;
+  const note=document.getElementById('tx_note').value.trim();
+  if(!empId){alert('Please select an employee.');return;}
+  if(!amount||amount<1){alert('Please enter a valid amount.');return;}
+  if(!date){alert('Please select a date.');return;}
+  const emp=S.employees.find(e=>e.id===empId);
+  const txn={id:Date.now(),empId,empName:emp?emp.name:'',date,type,amount,note,month:'',loggedAt:''};
+  S.transactions.push(txn);saveLocal();render();
+  if(!S.demoMode){
+    try{
+      const r=await gsCall({action:'addTransaction',empId,empName:txn.empName,date,type,amount,note,month:''});
+      txn.loggedAt=r.loggedAt||'';
+      toast(type+' of '+fmt(amount)+' logged \u2713 Written to sheet');
+    }catch(e){toast('Saved locally, sheet write failed: '+e.message);}
+  }else{toast(type+' of '+fmt(amount)+' logged for '+(emp?emp.name:empId));}
+}
+
+function viewSetup(){
+  return `
+  <div class="two-col">
+    <div>
+      <div class="sec-hd">Connect Apps Script</div>
+      <div class="card">
+        <div class="alert a-info">
+          This app uses a <strong>Google Apps Script Web App</strong> as its backend.
+          Every salary, advance, loan, and attendance update is written to your Google Sheet in real time.
+        </div>
+        <div class="field" style="margin-top:4px;">
+          <label class="lbl">Apps Script Web App URL</label>
+          <input id="inp_url" type="url" placeholder="https://script.google.com/macros/s/\u2026/exec" value="${S.scriptUrl}" autocomplete="off" />
+          <div style="font-size:11px;color:var(--text3);margin-top:5px;">Apps Script \u2192 Deploy \u2192 Manage deployments \u2192 copy the /exec URL</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <button id="btn_connect" class="btn btn-primary" onclick="connectScript()">Connect</button>
+          <button class="btn btn-ghost" onclick="useDemoMode()">Try Demo Mode</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="sec-hd">One-time Setup</div>
+      <div class="card">
+        <ul class="steps">
+          <li><div class="snum">1</div><div><div class="stitle">Create your Google Sheet</div><div class="sdesc">Make 3 tabs: <code>Employees</code>, <code>Attendance</code>, <code>Transactions</code>.<br>In <code>Employees</code>: Row 1 = header. Columns A B C = <strong>Name | Employee ID | Monthly Salary</strong>. Add employees from row 2.</div></div></li>
+          <li><div class="snum">2</div><div><div class="stitle">Open Apps Script</div><div class="sdesc">In your sheet: <strong>Extensions \u2192 Apps Script</strong>. Delete all code. Paste the full <code>code.gs</code> file contents. Click Save.</div></div></li>
+          <li><div class="snum">3</div><div><div class="stitle">Deploy as Web App</div><div class="sdesc">Click <strong>Deploy \u2192 New deployment \u2192 Web App</strong>.<br>Execute as: <strong>Me</strong> &nbsp;|&nbsp; Who has access: <strong>Anyone</strong>.<br>Click Deploy \u2192 authorise \u2192 copy the <code>/exec</code> URL.</div></div></li>
+          <li><div class="snum">4</div><div><div class="stitle">Paste URL and connect</div><div class="sdesc">Paste the URL on the left and click Connect. The app loads your employees and every action from now writes to the sheet instantly.</div></div></li>
+        </ul>
+        <div class="alert a-warn" style="margin-top:4px;margin-bottom:0;font-size:12px;">
+          \u26a0 After changing <code>code.gs</code> always do <strong>Deploy \u2192 New deployment</strong> \u2014 not just Save.
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function useDemoMode(){S.demoMode=true;S.employees=DEMO_EMP;setStatus('demo');S.view='payroll';render();}
+
+function viewPayroll(){
+  const days=daysInMonth(S.selectedMonth);
+  const rows=S.employees.map(emp=>{
+    const absent=getAbsent(emp.id,S.selectedMonth);
+    const payable=calcPayable(emp,absent,S.selectedMonth);
+    const half=Math.round(payable/2);
+    const paid=S.transactions.filter(t=>t.empId===emp.id&&t.month===S.selectedMonth&&t.type==='Salary').reduce((s,t)=>s+t.amount,0);
+    const balance=payable-paid;
+    return{emp,absent,days,payable,half,paid,balance};
+  });
+  const tPayable=rows.reduce((s,r)=>s+r.payable,0);
+  const tPaid=rows.reduce((s,r)=>s+r.paid,0);
+  const tPending=rows.reduce((s,r)=>s+r.balance,0);
+  return `
+  <div class="metrics">
+    <div class="metric"><div class="m-lbl">Total Payable</div><div class="m-val">${fmt(tPayable)}</div></div>
+    <div class="metric"><div class="m-lbl">Paid This Month</div><div class="m-val cr">${fmt(tPaid)}</div></div>
+    <div class="metric"><div class="m-lbl">Pending</div><div class="m-val dr">${fmt(tPending)}</div></div>
+    <div class="metric"><div class="m-lbl">Employees</div><div class="m-val">${S.employees.length}</div></div>
+  </div>
+  <div class="topbar">
+    <span class="topbar-lbl">Month:</span>
+    <input type="month" value="${S.selectedMonth}" onchange="S.selectedMonth=this.value;render()" />
+    <span style="font-size:12px;color:var(--text3);">${days} days \u00b7 ${monthName(S.selectedMonth)}</span>
+    <div style="display:flex;align-items:center;gap:5px;margin-left:6px;">
+      <span style="font-size:12px;color:var(--text2);">Round:</span>
+      <button class="btn btn-sm ${S.rounding==='none'?'btn-primary':'btn-ghost'}" onclick="setRounding('none')">Exact</button>
+      <button class="btn btn-sm ${S.rounding==='floor'?'btn-primary':'btn-ghost'}" onclick="setRounding('floor')">\u25bc 100</button>
+      <button class="btn btn-sm ${S.rounding==='ceil'?'btn-primary':'btn-ghost'}" onclick="setRounding('ceil')">\u25b2 100</button>
+    </div>
+    ${!S.demoMode?`
+      <button id="btn_save_att" class="btn btn-primary btn-sm" onclick="saveAttendanceToSheet()">Save Attendance</button>
+      <button class="btn btn-ghost btn-sm" onclick="refreshData()">\u21bb Refresh</button>
+    `:''}
+  </div>
+  ${rows.length===0?`<div class="empty">No employees found.<br>Connect your spreadsheet first.</div>`:`
+  <div class="card card-bare"><div class="tbl-wrap">
+  <table>
+    <thead><tr><th>Employee</th><th>Monthly Salary</th><th>Absent Days</th><th>Working Days</th><th>Payable</th><th>Half Pay</th><th>Paid</th><th>Balance</th><th>Issue Salary</th></tr></thead>
+    <tbody>
+      ${rows.map(({emp,absent,days,payable,half,paid,balance})=>{
+        const isPaid    = balance <= 0 && paid > 0;
+        const isPartial = balance > 0  && paid > 0;
+        const rowCls    = isPaid ? 'row-paid' : isPartial ? 'row-partial' : '';
+        return `
+      <tr class="${rowCls}">
+        <td>
+          <div class="emp-name">${emp.name}</div>
+          <div class="emp-id">${emp.id}</div>
+          ${isPaid ? '<div class="paid-label" style="margin-top:3px;">&#10003; Paid</div>' : ''}
+        </td>
+        <td>${fmt(emp.salary)}</td>
+        <td><input type="number" class="tiny" min="0" max="${days}" value="${absent}" onchange="updateAbsent('${emp.id}','${S.selectedMonth}',this.value)" /></td>
+        <td>${days-absent} / ${days}</td>
+        <td style="font-weight:600;${isPaid?'color:var(--green);':''}">${fmt(payable)}</td>
+        <td style="color:var(--text2);">${fmt(half)}</td>
+        <td style="${isPaid?'color:var(--green);font-weight:600;':''}">${fmt(paid)}</td>
+        <td><span class="badge ${balance>0?'b-amber':balance<0?'b-red':'b-green'}">${fmt(balance)}</span></td>
+        <td>
+          ${isPaid
+            ? `<div style="display:flex;align-items:center;gap:8px;">
+                 <span style="font-size:18px;line-height:1;">&#10003;</span>
+                 <span style="font-size:12px;color:var(--green);font-weight:500;">Salary issued</span>
+               </div>`
+            : `<div>
+                 ${isPartial ? `<div class="balance-hint">&#8377;${balance.toLocaleString('en-IN')} remaining</div>` : ''}
+                 <div style="display:flex;gap:6px;margin-bottom:6px;">
+                   <button class="btn btn-sm btn-green" onclick="issueSalary('${emp.id}',${payable},'Salary')">Full Pay</button>
+                   <button class="btn btn-sm btn-ghost" onclick="issueSalary('${emp.id}',${half},'Half salary')">Half Pay</button>
+                 </div>
+                 <div style="display:flex;gap:5px;align-items:center;">
+                   <input type="number" id="custom_${emp.id}" class="custom-amt" min="1"
+                     placeholder="Custom &#8377;"
+                     ${isPartial ? `value="${balance}"` : ''} />
+                   <button class="btn btn-sm" style="padding:4px 10px;font-size:11px;" onclick="issueCustom('${emp.id}')">Issue</button>
+                 </div>
+               </div>`
+          }
+        </td>
+      </tr>`;}).join('')}
+    </tbody>
+  </table>
+  </div></div>`}`;
+}
+
+function viewTransactions(){
+  const recent=[...S.transactions].reverse().slice(0,60);
+  return `
+  <div class="two-col">
+    <div>
+      <div class="sec-hd">Log Advance / Loan / Repayment</div>
+      <div class="card">
+        <div class="field"><label class="lbl">Employee</label>
+          <select id="tx_emp"><option value="">Select employee\u2026</option>
+            ${S.employees.map(e=>`<option value="${e.id}">${e.name} (${e.id})</option>`).join('')}
+          </select></div>
+        <div class="g2">
+          <div class="field"><label class="lbl">Type</label>
+            <select id="tx_type"><option>Advance</option><option>Loan</option><option>Repayment</option></select></div>
+          <div class="field"><label class="lbl">Amount (\u20b9)</label>
+            <input id="tx_amount" type="number" min="1" placeholder="5000" /></div>
+        </div>
+        <div class="g2">
+          <div class="field"><label class="lbl">Date</label>
+            <input id="tx_date" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
+          <div class="field"><label class="lbl">Note / Reason</label>
+            <input id="tx_note" type="text" placeholder="e.g. Medical advance" /></div>
+        </div>
+        <div style="margin-top:6px;"><button class="btn btn-primary" onclick="addTransaction()">Log Transaction</button></div>
+        ${!S.demoMode?`<div style="font-size:11px;color:var(--text3);margin-top:10px;">Written to the <code>Transactions</code> sheet with timestamp.</div>`:''}
+      </div>
+    </div>
+    <div>
+      <div class="sec-hd">All Transactions</div>
+      <div class="card card-bare scroll-t">
+        ${recent.length===0?`<div class="empty">No transactions yet</div>`:`
+        <table>
+          <thead><tr><th>Date</th><th>Employee</th><th>Type</th><th>Amount</th><th>Note</th><th>Logged At</th></tr></thead>
+          <tbody>
+            ${recent.map(t=>{
+              const emp=S.employees.find(e=>e.id===t.empId);
+              const cls=t.type==='Salary'?'b-green':t.type==='Repayment'?'b-blue':'b-amber';
+              return `<tr>
+                <td style="font-size:11px;color:var(--text3);white-space:nowrap;">${fmtDate(t.date)}</td>
+                <td>${emp?emp.name:t.empId}</td>
+                <td><span class="badge ${cls}">${t.type}</span></td>
+                <td style="font-weight:600;">${fmt(t.amount)}</td>
+                <td style="font-size:12px;color:var(--text2);">${t.note}</td>
+                <td style="font-size:10px;color:var(--text3);">${t.loggedAt||'\u2014'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+function viewLedger(){
+  const emp=S.employees.find(e=>e.id===S.selectedEmp);
+  const empTxns=emp?S.transactions.filter(t=>t.empId===emp.id).sort((a,b)=>new Date(a.date)-new Date(b.date)):[];
+  let runBal=0;
+  const rows=empTxns.map(t=>{
+    const isCr=(t.type==='Salary'||t.type==='Repayment');
+    if(isCr)runBal+=t.amount;else runBal-=t.amount;
+    return{...t,isCr,runBal};
+  });
+  const tSalary=empTxns.filter(t=>t.type==='Salary').reduce((s,t)=>s+t.amount,0);
+  const tAdv=empTxns.filter(t=>t.type==='Advance').reduce((s,t)=>s+t.amount,0);
+  const tLoan=empTxns.filter(t=>t.type==='Loan').reduce((s,t)=>s+t.amount,0);
+  const tRepaid=empTxns.filter(t=>t.type==='Repayment').reduce((s,t)=>s+t.amount,0);
+  const outstanding=tAdv+tLoan-tRepaid;
+  return `
+  <div class="topbar">
+    <span class="topbar-lbl">Employee:</span>
+    <select onchange="S.selectedEmp=this.value;render()" style="width:auto;min-width:220px;">
+      <option value="">Select employee\u2026</option>
+      ${S.employees.map(e=>`<option value="${e.id}" ${S.selectedEmp===e.id?'selected':''}>${e.name} \u2014 ${e.id}</option>`).join('')}
+    </select>
+    ${!S.demoMode?`<button class="btn btn-ghost btn-sm" onclick="refreshData()">\u21bb Refresh</button>`:''}
+  </div>
+  ${!emp?`<div class="empty">\ud83d\udcd2<br>Select an employee to view their complete ledger</div>`:`
+  <div class="metrics">
+    <div class="metric"><div class="m-lbl">Salary Issued</div><div class="m-val cr">${fmt(tSalary)}</div></div>
+    <div class="metric"><div class="m-lbl">Advances</div><div class="m-val dr">${fmt(tAdv)}</div></div>
+    <div class="metric"><div class="m-lbl">Loans</div><div class="m-val dr">${fmt(tLoan)}</div></div>
+    <div class="metric"><div class="m-lbl">Repayments</div><div class="m-val cr">${fmt(tRepaid)}</div></div>
+    <div class="metric"><div class="m-lbl">Outstanding</div><div class="m-val ${outstanding>0?'dr':''}">${fmt(outstanding)}</div></div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <div><span style="font-weight:600;font-size:15px;">${emp.name}</span>
+        <span style="font-size:12px;color:var(--text3);margin-left:8px;font-family:var(--mono);">${emp.id}</span></div>
+      <div style="font-size:12px;color:var(--text2);">Monthly Salary: <strong>${fmt(emp.salary)}</strong></div>
+    </div>
+    ${rows.length===0?`<div class="empty" style="padding:20px 0;">No transactions recorded yet</div>`:`
+    <div style="border-top:1px solid var(--border);">
+      ${rows.map(r=>`
+      <div class="l-row">
+        <span class="l-date">${fmtDate(r.date)}</span>
+        <div class="l-desc">
+          <div class="l-main">${r.note||r.type}${r.month?' <span style="font-size:11px;color:var(--text3);">('+monthName(r.month)+')</span>':''}</div>
+          <div class="l-sub">
+            <span class="badge ${r.type==='Salary'?'b-green':r.type==='Repayment'?'b-blue':'b-amber'}">${r.type}</span>
+            ${r.loggedAt?`<span style="margin-left:8px;font-size:10px;color:var(--text3);">${r.loggedAt}</span>`:''}
+          </div>
+        </div>
+        <span class="l-amt ${r.isCr?'cr':'dr'}">${r.isCr?'+':'-'}${fmt(r.amount)}</span>
+        <span class="l-bal">${fmt(Math.abs(r.runBal))} ${r.runBal>=0?'Cr':'Dr'}</span>
+      </div>`).join('')}
+    </div>
+    <div class="l-close">
+      <span>Closing Balance</span>
+      <span class="${runBal>=0?'cr':'dr'}">${fmt(Math.abs(runBal))} ${runBal>=0?'Cr':'Dr'}</span>
+    </div>`}
+  </div>`}`;
+}
+
+const VIEWS=[{id:'setup',label:'Setup'},{id:'payroll',label:'Payroll'},{id:'transactions',label:'Advances & Loans'},{id:'ledger',label:'Ledger'}];
+function render(){
+  document.getElementById('nav').innerHTML=VIEWS.map(v=>`<button class="nb ${S.view===v.id?'on':''}" onclick="S.view='${v.id}';render()">${v.label}</button>`).join('');
+  let html='';
+  if(S.view==='setup')html=viewSetup();
+  else if(S.view==='payroll')html=viewPayroll();
+  else if(S.view==='transactions')html=viewTransactions();
+  else if(S.view==='ledger')html=viewLedger();
+  document.getElementById('app').innerHTML=html;
+}
+if(S.demoMode){
+  setStatus('demo'); S.view='payroll'; render();
+} else if(S.scriptUrl) {
+  // URL already saved — auto-load fresh data from sheet on every open
+  setStatus('live'); render();
+  gsCall({action:'getAll'}).then(data=>{
+    S.employees    = data.employees    || S.employees;
+    S.attendance   = data.attendance   || [];
+    S.transactions = data.transactions || [];
+    saveLocal(); render();
+    toast('Data loaded from Google Sheets ✓');
+  }).catch(e=>{ toast('⚠ Could not refresh from sheet: '+e.message); });
+} else {
+  setStatus('none'); render();
+}
+</script>
+</body>
+</html>
