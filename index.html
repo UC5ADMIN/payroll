@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PayrollSheet</title>
+<style>
+  :root {
+    --bg:#f8f9fa;--surface:#fff;--border:#e0e0e0;
+    --text:#1a1a1a;--muted:#6b7280;--accent:#1a56db;
+    --green-bg:#f0fdf4;--green-text:#15803d;
+    --amber-bg:#fffbeb;--amber-text:#b45309;
+    --red:#dc2626;--red-bg:#fef2f2;--red-light:#fca5a5;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;}
+  header h1{font-size:16px;font-weight:700;}
+  .hright{display:flex;align-items:center;gap:12px;}
+  #sdot{width:8px;height:8px;border-radius:50%;background:#ccc;display:inline-block;margin-right:5px;transition:background .3s;}
+  #sdot.ok{background:#22c55e;}#sdot.err{background:var(--red);}#sdot.loading{background:#f59e0b;}
+  nav{display:flex;gap:2px;padding:12px 20px 0;background:var(--surface);border-bottom:1px solid var(--border);}
+  nav button{background:none;border:none;padding:8px 16px;cursor:pointer;font-size:13px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s;}
+  nav button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+  .tab{display:none;padding:20px;max-width:1200px;}
+  .tab.active{display:block;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;}
+  label{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;}
+  input[type=text],input[type=number],input[type=date],select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--surface);color:var(--text);}
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent);}
+  input:disabled{background:#f3f4f6;color:var(--muted);cursor:not-allowed;}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:opacity .15s,background .15s;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-secondary{background:var(--surface);color:var(--text);border:1px solid var(--border);}
+  .btn-green{background:#16a34a;color:#fff;}
+  .btn-amber{background:#d97706;color:#fff;}
+  .btn-sm{padding:4px 10px;font-size:12px;}
+  .btn-danger{background:#dc2626;color:#fff;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;padding:9px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;background:#fafafa;}
+  td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr.paid-row td{background:var(--green-bg);}
+  tr.partial-row td{background:var(--amber-bg);}
+  .badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;}
+  .badge-Salary{background:#dbeafe;color:#1e40af;}
+  .badge-Advance{background:#fef9c3;color:#854d0e;}
+  .badge-Repayment{background:#dcfce7;color:#166534;}
+  .badge-Active{background:#fef3c7;color:#92400e;}
+  .badge-Closed{background:#d1fae5;color:#065f46;}
+  .metric{text-align:center;padding:8px;}
+  .metric .val{font-size:22px;font-weight:700;line-height:1.2;}
+  .metric .lbl{font-size:11px;color:var(--muted);margin-top:3px;}
+  .toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity .2s;pointer-events:none;max-width:340px;line-height:1.4;}
+  .toast.show{opacity:1;}
+  .absent-input{width:58px;text-align:center;padding:5px 6px;}
+  .rounding-toggle{display:flex;gap:6px;}
+  .rounding-toggle button{padding:5px 11px;border:1px solid var(--border);border-radius:6px;background:var(--surface);cursor:pointer;font-size:12px;font-weight:500;}
+  .rounding-toggle button.sel{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .overline{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-weight:700;}
+  .empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px;}
+  .ci{display:flex;gap:6px;align-items:center;}
+  /* EMI preview */
+  #emi-fields{margin-top:14px;padding:14px;background:#f0f7ff;border-radius:8px;border:1px solid #bfdbfe;display:none;}
+  #emi-fields.show{display:block;}
+  #emi-preview{font-size:12px;color:#1e40af;margin-top:8px;font-weight:500;}
+  /* Ledger */
+  .ledger-section-title{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:10px 0 6px;margin-top:4px;}
+  .ledger-row{display:grid;grid-template-columns:90px 80px 1fr 1fr 1fr 1fr;gap:0;border-bottom:1px solid var(--border);align-items:center;}
+  .ledger-row:last-child{border-bottom:none;}
+  .ledger-header{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;background:#fafafa;border-bottom:2px solid var(--border);}
+  .ledger-cell{padding:9px 10px;font-size:13px;}
+  .expense{color:var(--red);font-weight:600;}
+  .income{color:#16a34a;font-weight:600;}
+  .neutral{color:var(--muted);}
+  .future-row{background:#fffbeb;}
+  .future-badge{display:inline-block;padding:1px 6px;background:#fef3c7;color:#92400e;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px;}
+  .balance-owed{color:var(--red);font-weight:700;}   /* company owes employee */
+  .balance-due{color:#16a34a;font-weight:700;}        /* employee owes company */
+  .balance-zero{color:var(--muted);}
+  .section-divider{border:none;border-top:2px dashed var(--border);margin:4px 0;}
+  .net-bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:8px;margin-bottom:16px;}
+  .net-bar.owed{background:var(--red-bg);border:1px solid var(--red-light);}
+  .net-bar.due{background:var(--green-bg);border:1px solid #bbf7d0;}
+  .net-bar.zero{background:#f3f4f6;border:1px solid var(--border);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📋 PayrollSheet</h1>
+  <div class="hright">
+    <button class="btn btn-secondary btn-sm" onclick="refreshData()">↻ Refresh</button>
+    <span><span id="sdot"></span><span id="stxt" style="font-size:12px;color:var(--muted)">Connecting…</span></span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('payroll',this)">Payroll</button>
+  <button onclick="showTab('advances',this)">Advances</button>
+  <button onclick="showTab('ledger',this)">Ledger</button>
+</nav>
+
+<!-- PAYROLL -->
+<div id="tab-payroll" class="tab active">
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div>
+        <label>Month</label>
+        <input type="month" id="payroll-month" style="width:160px" onchange="renderPayroll()">
+      </div>
+      <div>
+        <label>Rounding</label>
+        <div class="rounding-toggle">
+          <button id="r-exact" class="sel" onclick="setRounding('exact',this)">Exact</button>
+          <button id="r-floor" onclick="setRounding('floor',this)">▼100</button>
+          <button id="r-ceil"  onclick="setRounding('ceil',this)">▲100</button>
+        </div>
+      </div>
+      <div style="margin-left:auto">
+        <button class="btn btn-primary" id="save-att-btn" onclick="saveAttendance()">💾 Save Attendance</button>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <thead><tr>
+        <th>Employee</th><th>Monthly Salary</th><th>Absent Days</th><th>Working Days</th>
+        <th>Salary Earned</th><th>Salary Issued</th><th>Balance</th><th>Issue Salary</th>
+      </tr></thead>
+      <tbody id="payroll-body"><tr><td colspan="8" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADVANCES -->
+<div id="tab-advances" class="tab">
+  <div class="card" style="max-width:560px">
+    <div class="overline">Issue Advance</div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div><label>Employee</label><select id="adv-emp"></select></div>
+      <div><label>Date</label><input type="date" id="adv-date"></div>
+    </div>
+    <div class="grid2" style="margin-bottom:12px">
+      <div><label>Total Amount (₹)</label><input type="number" id="adv-amount" min="1" placeholder="0" oninput="updateInstallAmt()"></div>
+      <div><label>Month</label><input type="month" id="adv-month" onchange="updateStartMonth()"></div>
+    </div>
+    <div style="margin-bottom:12px"><label>Note</label><input type="text" id="adv-note" placeholder="Optional"></div>
+
+    <div id="emi-fields" class="show">
+      <div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:10px">⚡ EMI Deduction Schedule</div>
+      <div class="grid3">
+        <div><label>No. of Installments</label><input type="number" id="emi-count" min="1" max="60" value="1" oninput="updateInstallAmt()"></div>
+        <div><label>Amount / Installment (₹)</label><input type="number" id="emi-amt" min="1" oninput="updateEmiPreview()"></div>
+        <div><label>Deductions Start</label><input type="month" id="emi-start" onchange="updateEmiPreview()"></div>
+      </div>
+      <div id="emi-preview"></div>
+    </div>
+
+    <div style="margin-top:14px">
+      <button class="btn btn-primary" onclick="logAdvance()">Issue Advance</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="overline">Advance Register</div>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr>
+          <th>S.No</th><th>Employee</th><th>Date</th><th>Total</th>
+          <th>Installment</th><th>Paid</th><th>Remaining</th><th>Status</th>
+        </tr></thead>
+        <tbody id="advances-list"><tr><td colspan="8" class="empty">No advances yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- LEDGER -->
+<div id="tab-ledger" class="tab">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+    <div style="flex:0 0 260px">
+      <label>Employee</label>
+      <select id="ledger-emp" onchange="renderLedger()"></select>
+    </div>
+    <button class="btn btn-secondary" style="margin-top:16px" onclick="refreshData()">↻ Refresh</button>
+  </div>
+  <div id="ledger-content">
+    <div class="empty">Select an employee to view their ledger</div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+var SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw2qS6L6Be4RTC0qgY07khvPDTFjzBpFU0X-gwboOq-8UbKvRFV1ew6bFOy0bKuawnI1Q/exec';
+var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+var S = { employees:[], empSummaries:[], transactions:[], advances:[] };
+var rounding = localStorage.getItem('ps_rounding') || 'exact';
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.onload = function() {
+  var now = new Date();
+  var ym  = now.getFullYear() + '-' + pad(now.getMonth()+1);
+  document.getElementById('payroll-month').value = ym;
+  document.getElementById('adv-month').value     = ym;
+  document.getElementById('adv-date').value      = now.toISOString().slice(0,10);
+  var next = new Date(now.getFullYear(), now.getMonth()+1, 1);
+  document.getElementById('emi-start').value = next.getFullYear() + '-' + pad(next.getMonth()+1);
+  setRoundingUI();
+  loadData();
+};
+
+// ── API ───────────────────────────────────────────────────────────────────────
+function gsCall(params) {
+  var url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+  return fetch(url, { method:'GET', redirect:'follow' }).then(function(r){ return r.json(); });
+}
+
+function loadData() {
+  setStatus('loading');
+  gsCall({ action:'getAll' }).then(function(d) {
+    if (d.error) { setStatus('err', d.error); toast('Load error: '+d.error, true); return; }
+    S.employees    = d.employees    || [];
+    S.empSummaries = d.empSummaries || [];
+    S.transactions = d.transactions || [];
+    S.advances     = d.advances     || [];
+    setStatus('ok');
+    populateDropdowns();
+    renderPayroll();
+    renderAdvances();
+    renderLedger();
+  }).catch(function(e){ setStatus('err', e.message); toast('Connection error', true); });
+}
+
+function refreshData() { loadData(); }
+
+function setStatus(s, msg) {
+  var dot = document.getElementById('sdot'), txt = document.getElementById('stxt');
+  dot.className = s==='ok'?'ok':s==='err'?'err':'loading';
+  txt.textContent = s==='ok'?'Connected':s==='err'?(msg||'Error'):'Loading…';
+}
+
+// ── PAYROLL ───────────────────────────────────────────────────────────────────
+function ymToLabel(ym) {
+  if (!ym) return '';
+  var p = ym.split('-');
+  return MONTH_SHORT[parseInt(p[1])-1] + ' ' + p[0];
+}
+
+function applyRounding(n) {
+  if (rounding==='floor') return Math.floor(n/100)*100;
+  if (rounding==='ceil')  return Math.ceil(n/100)*100;
+  return Math.round(n);
+}
+
+function getSummary(empId, monthLabel) {
+  var p = monthLabel.split(' '), mon = p[0], yr = parseInt(p[1]);
+  return S.empSummaries.find(function(r){ return r.empId===empId && r.month===mon && r.year===yr; });
+}
+
+function renderPayroll() {
+  var ym    = document.getElementById('payroll-month').value;
+  var mon   = ymToLabel(ym);
+  var tbody = document.getElementById('payroll-body');
+  if (!S.employees.length) { tbody.innerHTML='<tr><td colspan="8" class="empty">No employees loaded</td></tr>'; return; }
+
+  var p = ym.split('-');
+  var daysInMon = new Date(parseInt(p[0]), parseInt(p[1]), 0).getDate();
+
+  tbody.innerHTML = S.employees.map(function(emp) {
+    var sum    = getSummary(emp.id, mon);
+    var absent = sum ? sum.absentDays   : 0;
+    var earned = sum ? applyRounding(sum.salaryEarned) : 0;
+    var issued = sum ? sum.salaryIssued : 0;
+    var locked = sum ? sum.locked : false;
+    var bal    = Math.max(0, earned - issued);
+    var cls    = issued>0 && bal===0 ? 'paid-row' : issued>0 ? 'partial-row' : '';
+
+    var absentCell = locked
+      ? '<span>'+absent+'</span> <span style="font-size:11px;color:var(--muted)">🔒</span>'
+      : '<input type="number" class="absent-input" data-id="'+emp.id+'" value="'+absent+'" min="0" max="'+daysInMon+'">';
+
+    var issueCell;
+    if (issued>0 && bal===0) {
+      issueCell = '<span style="color:var(--green-text);font-weight:600">✓ Issued</span>';
+    } else {
+      var fill = bal>0 ? bal : earned;
+      issueCell = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+        +'<button class="btn btn-green btn-sm" onclick="issueSalary(\''+emp.id+'\','+bal+',\''+mon+'\')">Full</button>'
+        +'<button class="btn btn-amber btn-sm" onclick="issueSalary(\''+emp.id+'\','+Math.round(earned/2)+',\''+mon+'\')">Half</button>'
+        +'<div class="ci"><input type="number" id="ci-'+emp.id+'" style="width:78px" value="'+fill+'" min="1">'
+        +'<button class="btn btn-secondary btn-sm" onclick="issueCustom(\''+emp.id+'\',\''+mon+'\')">Issue</button></div>'
+        +'</div>'
+        +(bal>0&&issued>0?'<div style="font-size:11px;color:var(--amber-text);margin-top:3px">₹'+fmt(bal)+' remaining</div>':'');
+    }
+    return '<tr class="'+cls+'">'
+      +'<td><b>'+emp.name+'</b><br><span style="font-size:11px;color:var(--muted)">'+emp.id+'</span></td>'
+      +'<td>₹'+fmt(emp.salary)+'</td>'
+      +'<td>'+absentCell+'</td>'
+      +'<td>'+(daysInMon-absent)+'/'+daysInMon+'</td>'
+      +'<td>₹'+fmt(earned)+'</td>'
+      +'<td>₹'+fmt(issued)+'</td>'
+      +'<td>'+(bal>0?'<span style="color:var(--red)">₹'+fmt(bal)+'</span>':'—')+'</td>'
+      +'<td>'+issueCell+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function saveAttendance() {
+  var ym    = document.getElementById('payroll-month').value;
+  var p     = ym.split('-');
+  var year  = parseInt(p[0]);
+  var monName = MONTH_SHORT[parseInt(p[1])-1];
+  var mon   = ymToLabel(ym);
+  var inputs = document.querySelectorAll('.absent-input[data-id]');
+  var payload = [];
+  inputs.forEach(function(inp) {
+    var empId = inp.dataset.id;
+    var sum   = getSummary(empId, mon);
+    if (sum && sum.locked) return;
+    var emp = S.employees.find(function(e){ return e.id===empId; });
+    if (emp) payload.push({ empId:empId, year:year, monthName:monName, absentDays:parseInt(inp.value)||0, salary:emp.salary });
+  });
+  if (!payload.length) return toast('All attendance already saved for this month', true);
+  var btn = document.getElementById('save-att-btn');
+  btn.disabled=true; btn.textContent='Saving…';
+  gsCall({ action:'saveAllAttendance', payload:JSON.stringify(payload) }).then(function(d){
+    btn.disabled=false; btn.textContent='💾 Save Attendance';
+    if (!d.ok && d.locked && d.locked.length) { toast('Already locked: '+d.locked.map(function(l){return l.empId;}).join(', '), true); return; }
+    if (d.error) { toast('Error: '+d.error, true); return; }
+    toast('Attendance saved for '+mon);
+    loadData();
+  }).catch(function(e){ btn.disabled=false; btn.textContent='💾 Save Attendance'; toast(e.message,true); });
+}
+
+function issueSalary(empId, amount, month) {
+  if (!amount) return toast('Nothing to issue', true);
+  var emp = S.employees.find(function(e){ return e.id===empId; });
+  sendTxn({ action:'addTransaction', empId:empId, empName:emp.name, date:todayISO(), type:'Salary', amount:amount, note:'', month:month, installments:1 });
+}
+function issueCustom(empId, month) {
+  var inp = document.getElementById('ci-'+empId);
+  var amt = parseInt(inp?inp.value:0)||0;
+  if (!amt) return toast('Enter an amount', true);
+  var emp = S.employees.find(function(e){ return e.id===empId; });
+  sendTxn({ action:'addTransaction', empId:empId, empName:emp.name, date:todayISO(), type:'Salary', amount:amt, note:'Custom', month:month, installments:1 });
+}
+
+// ── ADVANCES ─────────────────────────────────────────────────────────────────
+function updateStartMonth() {
+  var ym = document.getElementById('adv-month').value;
+  if (!ym) return;
+  var p = ym.split('-'), yr=parseInt(p[0]), mo=parseInt(p[1]);
+  if (mo===12){yr++;mo=1;}else{mo++;}
+  document.getElementById('emi-start').value = yr+'-'+pad(mo);
+  updateEmiPreview();
+}
+function updateInstallAmt() {
+  var total = parseFloat(document.getElementById('adv-amount').value)||0;
+  var count = parseInt(document.getElementById('emi-count').value)||1;
+  if (total && count) document.getElementById('emi-amt').value = Math.ceil(total/count);
+  updateEmiPreview();
+}
+function updateEmiPreview() {
+  var count = parseInt(document.getElementById('emi-count').value)||1;
+  var amt   = parseFloat(document.getElementById('emi-amt').value)||0;
+  var start = document.getElementById('emi-start').value;
+  var el    = document.getElementById('emi-preview');
+  if (!start||!amt) { el.textContent=''; return; }
+  var months=[], p=start.split('-'), yr=parseInt(p[0]), mo=parseInt(p[1])-1;
+  for (var i=0;i<Math.min(count,5);i++){
+    months.push(MONTH_SHORT[mo]+' '+yr);
+    mo++;if(mo===12){mo=0;yr++;}
+  }
+  if (count>5) months.push('…+'+( count-5)+' more');
+  el.textContent = '↳ ' + months.join(' · ') + ' · ₹'+fmt(amt)+'/month';
+}
+
+function logAdvance() {
+  var empId = document.getElementById('adv-emp').value;
+  var emp   = S.employees.find(function(e){ return e.id===empId; });
+  if (!emp) return toast('Select an employee', true);
+  var amount = parseFloat(document.getElementById('adv-amount').value)||0;
+  if (!amount) return toast('Enter an amount', true);
+  var count    = parseInt(document.getElementById('emi-count').value)||1;
+  var instAmt  = parseFloat(document.getElementById('emi-amt').value)||Math.ceil(amount/count);
+  var startYm  = document.getElementById('emi-start').value;
+  if (!startYm) return toast('Select deduction start month', true);
+  sendTxn({
+    action:'addTransaction', empId:empId, empName:emp.name,
+    date:  document.getElementById('adv-date').value,
+    type:'Advance', amount:amount,
+    note:  document.getElementById('adv-note').value,
+    month: ymToLabel(document.getElementById('adv-month').value),
+    installments:      count,
+    installmentAmount: instAmt,
+    startMonth:        ymToLabel(startYm)
+  });
+}
+
+function sendTxn(params) {
+  gsCall(params).then(function(d){
+    if (d.error) { toast('Error: '+d.error, true); return; }
+    toast(params.type+' logged for '+params.empName);
+    loadData();
+  }).catch(function(e){ toast(e.message,true); });
+}
+
+function renderAdvances() {
+  var tbody = document.getElementById('advances-list');
+  if (!S.advances.length) { tbody.innerHTML='<tr><td colspan="8" class="empty">No advances issued yet</td></tr>'; return; }
+  tbody.innerHTML = S.advances.slice().reverse().map(function(a){
+    return '<tr>'
+      +'<td><b>'+a.sno+'</b></td>'
+      +'<td>'+a.empName+'<br><span style="font-size:11px;color:var(--muted)">'+a.empId+'</span></td>'
+      +'<td>'+a.date+'</td>'
+      +'<td>₹'+fmt(a.total)+'</td>'
+      +'<td>₹'+fmt(a.instAmt)+' × '+a.instCount+'</td>'
+      +'<td>'+a.paid+'</td>'
+      +'<td>'+a.remaining+'</td>'
+      +'<td><span class="badge badge-'+a.status+'">'+a.status+'</span></td>'
+      +'</tr>';
+  }).join('');
+}
+
+// ── LEDGER ────────────────────────────────────────────────────────────────────
+function renderLedger() {
+  var empId  = document.getElementById('ledger-emp').value;
+  var el     = document.getElementById('ledger-content');
+  if (!empId) { el.innerHTML='<div class="empty">Select an employee to view their ledger</div>'; return; }
+
+  var emp = S.employees.find(function(e){ return e.id===empId; });
+  var today = new Date(); today.setHours(0,0,0,0);
+
+  // All summary rows for this employee, sorted chronologically
+  var rows = S.empSummaries
+    .filter(function(r){ return r.empId===empId; })
+    .sort(function(a,b){ return a.year!==b.year?a.year-b.year:MONTH_SHORT.indexOf(a.month)-MONTH_SHORT.indexOf(b.month); });
+
+  // Upcoming EMI transactions (future repayments from Transactions)
+  var futureEmi = S.transactions.filter(function(t){
+    if (t.empId!==empId || t.type!=='Repayment') return false;
+    if (!t.date) return false;
+    var d = new Date(t.date); d.setHours(0,0,0,0);
+    return d > today;
+  }).sort(function(a,b){ return a.date.localeCompare(b.date); });
+
+  // Past rows = months up to and including current month
+  var curYr  = today.getFullYear();
+  var curMon = MONTH_SHORT[today.getMonth()];
+  var pastRows = rows.filter(function(r){
+    if (r.year < curYr) return true;
+    if (r.year === curYr) return MONTH_SHORT.indexOf(r.month) <= MONTH_SHORT.indexOf(curMon);
+    return false;
+  });
+
+  // Net balance: latest closing balance
+  var latestRow   = pastRows.length ? pastRows[pastRows.length-1] : null;
+  var netBal      = latestRow ? latestRow.closeBal : 0;
+  // closeBal > 0 → company owes employee (expense/red)
+  // closeBal < 0 → employee owes company (green)
+  var netClass    = netBal > 0 ? 'owed' : netBal < 0 ? 'due' : 'zero';
+  var netLabel    = netBal > 0 ? 'Company owes employee' : netBal < 0 ? 'Employee owes company' : 'Settled';
+  var netColor    = netBal > 0 ? 'var(--red)' : netBal < 0 ? '#16a34a' : 'var(--muted)';
+
+  var html = '';
+
+  // Net balance bar
+  html += '<div class="net-bar '+netClass+'">'
+    +'<div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:inherit;opacity:.7">Net Balance</div>'
+    +'<div style="font-size:24px;font-weight:800;color:'+netColor+'">₹'+fmt(Math.abs(netBal))+'</div>'
+    +'<div style="font-size:12px;color:'+netColor+'">'+netLabel+'</div></div>'
+    +(emp?'<div style="text-align:right"><div style="font-size:11px;color:var(--muted)">Monthly Salary</div><div style="font-size:18px;font-weight:700">₹'+fmt(emp.salary)+'</div></div>':'')
+    +'</div>';
+
+  // Past months table
+  if (pastRows.length) {
+    html += '<div class="card" style="overflow-x:auto;padding:0">';
+    html += '<div style="padding:14px 16px 0"><div class="overline">Payment History</div></div>';
+    html += '<table><thead><tr>'
+      +'<th>Month</th><th>Absent Days</th><th>Salary Earned</th>'
+      +'<th>Salary Paid</th><th>Advance Given</th><th>EMI Recovered</th><th>Balance</th>'
+      +'</tr></thead><tbody>';
+
+    pastRows.forEach(function(r) {
+      // Balance: positive = company owes (red), negative = employee owes (green)
+      var balClass = r.closeBal > 0 ? 'balance-owed' : r.closeBal < 0 ? 'balance-due' : 'balance-zero';
+      var balText  = r.closeBal > 0
+        ? '<span class="balance-owed">₹'+fmt(r.closeBal)+' owed</span>'
+        : r.closeBal < 0
+          ? '<span class="balance-due">₹'+fmt(Math.abs(r.closeBal))+' due</span>'
+          : '<span class="balance-zero">Settled</span>';
+      html += '<tr>'
+        +'<td><b>'+r.month+' '+r.year+'</b></td>'
+        +'<td>'+r.absentDays+'</td>'
+        +'<td class="expense">₹'+fmt(r.salaryEarned)+'</td>'
+        +'<td class="expense">₹'+fmt(r.salaryIssued)+'</td>'
+        +'<td class="expense">₹'+fmt(r.advIssued)+'</td>'
+        +'<td class="income">₹'+fmt(r.repayment)+'</td>'
+        +'<td>'+balText+'</td>'
+        +'</tr>';
+    });
+    html += '</tbody></table></div>';
+  } else {
+    html += '<div class="card"><div class="empty">No history yet for this employee</div></div>';
+  }
+
+  // Upcoming EMI deductions
+  if (futureEmi.length) {
+    html += '<div class="card" style="overflow-x:auto;padding:0">';
+    html += '<div style="padding:14px 16px 0"><div class="overline">Upcoming EMI Deductions</div></div>';
+    html += '<table><thead><tr><th>Date</th><th>Amount</th><th>Month</th><th>Note</th></tr></thead><tbody>';
+    futureEmi.forEach(function(t){
+      html += '<tr style="background:var(--amber-bg)">'
+        +'<td>'+t.date+' <span class="future-badge">Upcoming</span></td>'
+        +'<td class="income">₹'+fmt(t.amount)+'</td>'
+        +'<td>'+t.month+'</td>'
+        +'<td style="color:var(--muted);font-size:12px">'+t.note+'</td>'
+        +'</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function populateDropdowns() {
+  var opts = S.employees.map(function(e){
+    return '<option value="'+e.id+'">'+e.name+' ('+e.id+')</option>';
+  }).join('');
+  var blank = '<option value="">— Select Employee —</option>';
+  document.getElementById('adv-emp').innerHTML    = blank+opts;
+  document.getElementById('ledger-emp').innerHTML = blank+opts;
+}
+
+function showTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('active'); });
+  document.querySelectorAll('nav button').forEach(function(b){ b.classList.remove('active'); });
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if (name==='ledger')   renderLedger();
+  if (name==='advances') renderAdvances();
+  if (name==='payroll')  renderPayroll();
+}
+
+function setRounding(r) { rounding=r; localStorage.setItem('ps_rounding',r); setRoundingUI(); renderPayroll(); }
+function setRoundingUI() {
+  ['exact','floor','ceil'].forEach(function(r){
+    var el=document.getElementById('r-'+r); if(el) el.classList.toggle('sel',rounding===r);
+  });
+}
+
+function fmt(n){ return Number(n||0).toLocaleString('en-IN'); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+var _tt;
+function toast(msg, isErr) {
+  var el=document.getElementById('toast');
+  el.textContent=(isErr?'⚠ ':'✓ ')+msg;
+  el.style.background=isErr?'#991b1b':'#1a1a1a';
+  el.classList.add('show');
+  clearTimeout(_tt);
+  _tt=setTimeout(function(){ el.classList.remove('show'); },4000);
+}
+</script>
+</body>
+</html>
